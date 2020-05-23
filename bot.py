@@ -142,8 +142,8 @@ def get_anecdot(update, context):
 
 # /COMANDS
 def start(update, context):
-    keyboard = ReplyKeyboardMarkup([['Хочу анекдот!'], ['Хочу быть в курсе событий!'], ['Хочу заполнить анкету!']], resize_keyboard=True, one_time_keyboard=True)
-    context.bot.send_message(chat_id=update.effective_chat.id, text="Я могу отправить тебе *случайный анекдот* или *последние новости*.\nЧто выбираешь?", reply_markup=keyboard, parse_mode='Morkdown')
+    keyboard = ReplyKeyboardMarkup([['Хочу анекдот!'], ['Хочу быть в курсе событий!'], ['Хочу поболтать!']], resize_keyboard=True, one_time_keyboard=True)
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Я могу отправить тебе *случайный анекдот* или *последние новости*.\n\nА можем просто поболтать.\n\nЧто выбираешь?", reply_markup=keyboard, parse_mode='Markdown')
 
 
 def caps(update, context):
@@ -220,7 +220,7 @@ def user_phone(update, context):
     text = 'Расскажите'
     if context.user_data['respect'] == 'тебе':
         text = 'Расскажи'
-    update.message.reply_text(text=f'{text}, пожалуйста пару слов о себе.')
+    update.message.reply_text(text=f'{text}, пожалуйста пару слов о себе.', reply_markup=ReplyKeyboardMarkup([['Пропустить']], resize_keyboard=True, one_time_keyboard=True))
     return 'user_bio'
 
 
@@ -237,15 +237,25 @@ def user_evaluate(update, context):
     text = 'Напишите короткий комментарий. Почему ваша оценка именно такая?'
     if context.user_data['respect'] == 'тебе':
         text = 'Оставь пару комментариев. Нам будет приятно:)'
-    update.message.reply_text(text=text)
+    update.message.reply_text(text=text, reply_markup=ReplyKeyboardMarkup([['Пропустить']], resize_keyboard=True, one_time_keyboard=True))
     return 'user_comment'
 
 
 def questionnaire_completing(update, context):
     context.user_data['user_comment'] = update.message.text
+
     phone = 'Ты скромняга, так что будем переписываться тут)'
     if context.user_data.get('user_phone'):
         phone = f'Твой номер телефона - *{context.user_data["user_phone"]}*, жди звонка ;)'
+    
+    user_bio = f'Твой рассказ о себе, поразил меня до глубины души: _{context.user_data["user_bio"]}_'
+    if context.user_data['user_bio'] == 'Пропустить':
+        user_bio = 'Жаль, что ты ничего не рассказал о себе :('
+    user_comment = f'Твои слова запали на веки в мое железное сердце:\n    _{context.user_data["user_comment"]}_'
+    
+    if context.user_data['user_comment'] == 'Пропустить':
+        user_comment = 'А тут мог быть твой комментарий...'
+
     end_message = f"""
     С тобой было приятно пообщаться, давай подведем итоги!
     Bот, что я о тебе узнал:
@@ -253,17 +263,19 @@ def questionnaire_completing(update, context):
     Тебя зовут: *{context.user_data['user_name']}*
     Твой возраст: *{context.user_data['user_age']}*
     {phone}
-    Твой рассказ о себе, поразил меня до глубины души: _{context.user_data['user_bio']}_
+    {user_bio}
     Ты оценил нас на *{context.user_data['user_evaluate']}* 
-    Твои слова запали на веки в мое железное сердце:
-    _{context.user_data['user_comment']}_
+    {user_comment}
 
     Приходи еще - пообщаемся! Чао!"""
+    
     update.message.reply_text(text=end_message, parse_mode='Markdown', reply_markup=ReplyKeyboardMarkup([['/start']], resize_keyboard=True, one_time_keyboard=True))
     return ConversationHandler.END
 
+
 def dontknow(update, context):
     update.message.reply_text(text='Непоняяятненько, можно еще раз)')
+
 
 def echo(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text=update.message.text)
@@ -290,15 +302,15 @@ def main():
     dispatcher.add_handler(CommandHandler('trans', trans))
 
     dispatcher.add_handler(ConversationHandler(
-        entry_points=[MessageHandler(Filters.regex('Хочу заполнить анкету!'), start_anket)],
+        entry_points=[MessageHandler(Filters.regex('Хочу поболтать!'), start_anket)],
         states={
             'user_name': [MessageHandler(Filters.text & (~Filters.command), user_name)],
             'respect': [MessageHandler(Filters.regex('Конечно на Ты!|Лучше на Вы.'), respect)],
             'user_age': [MessageHandler(Filters.regex('^[0-9]+$'), user_age)],
             'user_phone':[MessageHandler(Filters.contact | Filters.regex('Мы еще не так близко знакомы, чтобы обмениваться телефонами!'), user_phone)],
-            'user_bio': [MessageHandler(Filters.text & (~Filters.command), user_bio)],
+            'user_bio': [MessageHandler(Filters.text & (~Filters.command | Filters.regex('Пропустить')), user_bio)],
             'user_evaluate': [MessageHandler(Filters.regex('[1-5]'), user_evaluate)],
-            'user_comment': [MessageHandler(Filters.text & (~Filters.command), questionnaire_completing)],
+            'user_comment': [MessageHandler(Filters.text & (~Filters.command) | Filters.regex('Пропустить'), questionnaire_completing)],
         },
         fallbacks = [MessageHandler(Filters.text | Filters.video | Filters.photo | Filters.document, dontknow)]
     ))
