@@ -7,8 +7,8 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-from telegram.ext import Updater, CommandHandler, MessageHandler, InlineQueryHandler, Filters
-from telegram import InlineQueryResultArticle, InputTextMessageContent, ReplyKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, MessageHandler, InlineQueryHandler, ConversationHandler, Filters
+from telegram import InlineQueryResultArticle, InputTextMessageContent, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 load_dotenv()
+
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 PRACTICUM_TOKEN = os.getenv("PRACTICUM_TOKEN")
@@ -27,6 +28,7 @@ LAYOUT = dict(zip(map(ord, "qwertyuiop[]asdfghjkl;'zxcvbnm,./`67йцукенгш
                             'ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ,Ё:?QWERTYUIOP{}ASDFGHJKL:"ZXCVBNM<>?~^&'))
 
 
+# check YA homeworks status
 def parse_homework_status(homework):
     homework_name = homework["lesson_name"]
     if homework["status"] == "rejected":
@@ -78,7 +80,7 @@ def hw(update, context):
         
         new_job_hw_check = context.job_queue.run_repeating(check_homework_statuses, interval=300, first=0, context=current_timestamp)
         context.chat_data['job_hw_check'] = new_job_hw_check
-        update.message.reply_text('Пошел узнавать!\nКак только твою домашнюю работу проверят, сообщу результат.')
+        update.message.reply_text('*Пошел узнавать!*\nКак только твою домашнюю работу проверят, сообщу результат.', parse_mode='Markdown')
 
     else: 
         context.bot.send_message(chat_id=update.effective_chat.id, text="Эта команда не поддерживается.\nПопробуйте написать /caps")
@@ -93,24 +95,12 @@ def hws(update, context):
     job.schedule_removal()
     del context.chat_data['job_hw_check']
 
-    update.message.reply_text('Остановил проверку статуса.\nДля повторного запуска напиши:\n"/hw <часы>"')
+    update.message.reply_text('*Остановил проверку статуса*.\nДля повторного запуска напиши:\n"/hw <часы>"', parse_mode='Markdown')
+# END check YA homeworks status
 
 
-def start(update, context):
-    keyboard = ReplyKeyboardMarkup([['Хочу анекдот!'], ['Хочу быть в курсе событий!']], resize_keyboard=True, one_time_keyboard=True)
-    context.bot.send_message(chat_id=update.effective_chat.id, text="Я могу отправить тебе случайный анекдот или последние новости.\nЧто выбираешь?", reply_markup=keyboard)
-
-
-def get_anecdot(update, context):
-    response = requests.get('http://anekdotme.ru/random')
-    page = BeautifulSoup(response.text, 'html.parser')
-    find = page.select('.anekdot_text')
-    for text in find:
-        page = text.getText().strip()
-    update.message.reply_text(page)
-
-
-def get_news(bot, chat_id, max_result=5):
+# NEWS
+def get_news(bot, chat_id, max_result=10):
     params = {'country': 'ru', 'apiKey': NEWSAPI}
     response = requests.get('http://newsapi.org/v2/top-headlines', params=params)
     try:
@@ -122,10 +112,10 @@ def get_news(bot, chat_id, max_result=5):
     articles = response.json().get('articles')[:max_result]
     for article in articles:
         title = article['title']
-        description = article['description']
+        # description = article['description']
         url = article['url']
         publishedAt = datetime.datetime.strptime(article['publishedAt'], "%Y-%m-%dT%H:%M:%SZ")
-        bot.send_message(chat_id=chat_id, text=f'*{title}*\n_{publishedAt.strftime("%d.%m.%Y, %H:%M")}_\n\n{description}\n{url}\n', parse_mode='Markdown')
+        bot.send_message(chat_id=chat_id, text=f'*{title}*\n_{publishedAt.strftime("%d.%m.%Y, %H:%M")}_\n\n{url}\n', parse_mode='Markdown')
 
 
 def news(update, context):
@@ -139,7 +129,21 @@ def get_daily_news(context):
 def subscribe_news(update, context):
     subs_news = context.job_queue.run_daily(get_daily_news, time=datetime.time(hour=10, minute=30, second=0, tzinfo=datetime.timezone(datetime.timedelta(hours=3))), context=update.effective_chat.id)
     # context.chat_data['subs_news'] = subs_news
-    update.message.reply_text(f'Вы подписались на ежедневную новостную рассылку.\n*Ждите новостей {datetime.datetime.strftime(subs_news.next_t, "%d.%m.%Y в %H:%M")}*')
+    update.message.reply_text(f'Вы подписались на ежедневную новостную рассылку.\n*Ждите первых новостей {datetime.datetime.strftime(subs_news.next_t, "%d.%m.%Y в %H:%M")}*', parse_mode='Markdown')
+# END NEWS
+
+
+def get_anecdot(update, context):
+    response = requests.get('http://anekdotme.ru/random')
+    page = BeautifulSoup(response.text, 'html.parser')
+    anecdot = page.select('.anekdot_text')[0].getText().strip()
+    update.message.reply_text(anecdot)
+
+
+# /COMANDS
+def start(update, context):
+    keyboard = ReplyKeyboardMarkup([['Хочу анекдот!'], ['Хочу быть в курсе событий!'], ['Хочу заполнить анкету!']], resize_keyboard=True, one_time_keyboard=True)
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Я могу отправить тебе *случайный анекдот* или *последние новости*.\nЧто выбираешь?", reply_markup=keyboard, parse_mode='Morkdown')
 
 
 def caps(update, context):
@@ -174,7 +178,92 @@ def inline_trans(update, context):
 
 def unknow_comand(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text="Эта команда не поддерживается.\nПопробуйте написать /caps")
+# END COMANDS
 
+
+#ANKETA
+def start_anket(update, context):
+    update.message.reply_text("- Привет! Меня зовут Профессор бот. Я проведу с вами беседу.\n\n Как вас зовут?", reply_markup=ReplyKeyboardRemove())
+    return 'user_name'
+
+
+def user_name(update, context):
+    context.user_data['user_name'] = update.message.text
+    update.message.reply_text('Можем перейти на *"ты"*?\nИли удобнее на *"вы"*?', reply_markup=ReplyKeyboardMarkup([['Конечно на Ты!'], ['Лучше на Вы.']], resize_keyboard=True, one_time_keyboard=True), parse_mode='Markdown')
+    return 'respect'  
+
+
+def respect(update, context):
+    resp = 'вам'
+    if update.message.text == 'Конечно на Ты!':
+        resp = 'тебе'
+    context.user_data['respect'] = resp
+    update.message.reply_text(f'Запомнил!\nА сколько {resp} лет?')
+    return 'user_age'
+
+
+def user_age(update, context):
+    context.user_data['user_age'] = update.message.text
+    button1 = KeyboardButton('Конечно!', request_contact=True)
+    button2 = KeyboardButton('Мы еще не так близко знакомы, чтобы обмениваться телефонами!')
+    keyboard = ReplyKeyboardMarkup([[button1], [button2]], resize_keyboard=True, one_time_keyboard=True)
+    text = 'Пришлите, свой номер телефона, пожалуйста.'
+    if context.user_data['respect'] == 'тебе':
+        text = 'Оставишь номерок?'
+    update.message.reply_text(text=text, reply_markup=keyboard)
+    return 'user_phone'
+
+
+def user_phone(update, context):
+    if update.message.contact:
+        context.user_data['user_phone'] = update.message.contact.phone_number
+    text = 'Расскажите'
+    if context.user_data['respect'] == 'тебе':
+        text = 'Расскажи'
+    update.message.reply_text(text=f'{text}, пожалуйста пару слов о себе.')
+    return 'user_bio'
+
+
+def user_bio(update, context):
+    context.user_data['user_bio'] = update.message.text
+    buttons = [[str(i)] for i in reversed(range(1, 6)) ]
+    keyboard = ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=True)
+    update.message.reply_text(text='Оцените заполнение анкеты\n*от 1 до 5*?\n\n_5 - очень понравилось\n1- совсем плохо_', reply_markup=keyboard, parse_mode='Markdown')
+    return 'user_evaluate'
+
+
+def user_evaluate(update, context):
+    context.user_data['user_evaluate'] = update.message.text
+    text = 'Напишите короткий комментарий. Почему ваша оценка именно такая?'
+    if context.user_data['respect'] == 'тебе':
+        text = 'Оставь пару комментариев. Нам будет приятно:)'
+    update.message.reply_text(text=text)
+    return 'user_comment'
+
+
+def questionnaire_completing(update, context):
+    context.user_data['user_comment'] = update.message.text
+    phone = 'Ты скромняга, так что будем переписываться тут)'
+    if context.user_data.get('user_phone'):
+        phone = f'Твой номер телефона - *{context.user_data["user_phone"]}*, жди звонка ;)'
+    end_message = f"""
+    С тобой было приятно пообщаться, давай подведем итоги!
+    Bот, что я о тебе узнал:
+
+    Тебя зовут: *{context.user_data['user_name']}*
+    Твой возраст: *{context.user_data['user_age']}*
+    {phone}
+    Твой рассказ о себе, поразил меня до глубины души: _{context.user_data['user_bio']}_
+    Ты оценил нас на *{context.user_data['user_evaluate']}* 
+    Твои слова запали на веки в мое железное сердце:
+    _{context.user_data['user_comment']}_
+
+    Приходи еще - пообщаемся! Чао!"""
+    update.message.reply_text(text=end_message, parse_mode='Markdown', reply_markup=ReplyKeyboardMarkup([['/start']], resize_keyboard=True, one_time_keyboard=True))
+    return ConversationHandler.END
+
+def dontknow(update, context):
+    update.message.reply_text(text='Непоняяятненько, можно еще раз)')
 
 def echo(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text=update.message.text)
@@ -195,17 +284,29 @@ def main():
 
     dispatcher.add_handler(CommandHandler("hw", hw))
     dispatcher.add_handler(CommandHandler("hws", hws))
-    dispatcher.add_handler(CommandHandler('start', start))
     dispatcher.add_handler(CommandHandler('news', subscribe_news))
+    dispatcher.add_handler(CommandHandler('start', start))
     dispatcher.add_handler(CommandHandler('caps', caps))
     dispatcher.add_handler(CommandHandler('trans', trans))
 
-    
+    dispatcher.add_handler(ConversationHandler(
+        entry_points=[MessageHandler(Filters.regex('Хочу заполнить анкету!'), start_anket)],
+        states={
+            'user_name': [MessageHandler(Filters.text & (~Filters.command), user_name)],
+            'respect': [MessageHandler(Filters.regex('Конечно на Ты!|Лучше на Вы.'), respect)],
+            'user_age': [MessageHandler(Filters.regex('^[0-9]+$'), user_age)],
+            'user_phone':[MessageHandler(Filters.contact | Filters.regex('Мы еще не так близко знакомы, чтобы обмениваться телефонами!'), user_phone)],
+            'user_bio': [MessageHandler(Filters.text & (~Filters.command), user_bio)],
+            'user_evaluate': [MessageHandler(Filters.regex('[1-5]'), user_evaluate)],
+            'user_comment': [MessageHandler(Filters.text & (~Filters.command), questionnaire_completing)],
+        },
+        fallbacks = [MessageHandler(Filters.text | Filters.video | Filters.photo | Filters.document, dontknow)]
+    ))
+
     dispatcher.add_handler(MessageHandler(Filters.command, unknow_comand))
     dispatcher.add_handler(MessageHandler(Filters.regex('Хочу анекдот!'), get_anecdot))
     dispatcher.add_handler(MessageHandler(Filters.regex('Хочу быть в курсе событий!'), news))
     dispatcher.add_handler(MessageHandler(Filters.text & (~Filters.command), echo))
-
 
     dispatcher.add_error_handler(error)
 
