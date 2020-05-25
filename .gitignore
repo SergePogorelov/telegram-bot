@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 .vscode
 message.py
+bot_copy.py
