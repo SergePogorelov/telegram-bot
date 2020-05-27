@@ -2,3 +2,5 @@ python-telegram-bot
 requests
 python-dotenv
 bs4
+python-Levenshtein
+redis

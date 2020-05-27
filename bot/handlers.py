@@ -4,11 +4,14 @@ import time
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-
+import redis
 from telegram import InlineQueryResultArticle, InputTextMessageContent, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
-from keyboards import get_inline_keyboard
+from keyboards import get_inline_keyboard, get_start_keyboard
 from subscribe_news import subscribe_news, unsubscribe_news
+from chat import generate_answer
+from quiz_game import start_quiz
+
 
 load_dotenv()
 
@@ -16,11 +19,15 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 PRACTICUM_TOKEN = os.getenv("PRACTICUM_TOKEN")
 
-
 LAYOUT = dict(zip(map(ord, "qwertyuiop[]asdfghjkl;'zxcvbnm,./`67йцукенгшщзхъфывапролджэячсмитьбю.ё67"
                             'QWERTYUIOP{}ASDFGHJKL:"ZXCVBNM<>?~^&ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ,Ё:?'),
                             "йцукенгшщзхъфывапролджэячсмитьбю.ё67qwertyuiop[]asdfghjkl;'zxcvbnm,./`67"
                             'ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ,Ё:?QWERTYUIOP{}ASDFGHJKL:"ZXCVBNM<>?~^&'))
+
+
+r = redis.StrictRedis()
+if os.getenv('HEROKU'):
+    r = redis.from_url(os.environ.get("REDIS_URL"))
 
 
 # check YA homeworks status
@@ -103,9 +110,8 @@ def get_anecdot(update, context):
 
 # /COMANDS
 def start(update, context):
-    print(context.bot)
-    keyboard = ReplyKeyboardMarkup([['Хочу анекдот!'], ['Хочу быть в курсе событий!'], ['Хочу поболтать!']], resize_keyboard=True, one_time_keyboard=True)
-    context.bot.send_message(chat_id=update.effective_chat.id, text="Я могу отправить тебе *случайный анекдот* или *последние новости*.\n\nА можем просто поболтать.\n\nЧто выбираешь?", reply_markup=keyboard, parse_mode='Markdown')
+    r.sadd('users', update.effective_chat.id)
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Я могу отправить тебе *случайный анекдот* или *последние новости*.\n\nА можем просто поболтать.\n\nЧто выбираешь?", reply_markup=get_start_keyboard(), parse_mode='Markdown')
 
 
 def caps(update, context):
@@ -154,15 +160,19 @@ def inline_trans(update, context):
     context.bot.answer_inline_query(update.inline_query.id, results)
 
 
-def echo(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id, text=update.message.text)
+def quiz(update, context):
+    start_quiz(update, context)
+
+
+def chat(update, context):
+    update.message.reply_text(generate_answer(update.message.text))
 
 
 def menu(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text='ouwer menu" select some buttun: ', reply_markup=get_inline_keyboard(menu1=True))
 
 
-def inline_button_handler(update, context):
+def inline_button_news(update, context):
     query = update.callback_query
     query.answer()
 
@@ -182,6 +192,7 @@ def inline_button_handler(update, context):
     if query.data == 'botton1':
         query.edit_message_text(text='you shose botton1', reply_markup=get_inline_keyboard(menu1=True))
         context.bot.send_message(chat_id=update.effective_chat.id, text='hello', reply_markup=get_inline_keyboard(menu2=True))
+
 
 if __name__ == "__main__":
     from bot import main

@@ -1,4 +1,4 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 
 
 def get_inline_keyboard(
@@ -57,6 +57,19 @@ def get_inline_keyboard(
         ]
 
     return InlineKeyboardMarkup(keyboard)
+
+
+def get_start_keyboard():
+    return ReplyKeyboardMarkup(
+        [
+            ['Хочу анекдот!'], 
+            ['Хочу быть в курсе событий!'], 
+            ['Хочу поболтать!'],
+            ['Хочу поиграть в квиз!']
+        ], 
+        resize_keyboard=True, 
+        one_time_keyboard=True
+    )
 
 
 if __name__ == "__main__":
