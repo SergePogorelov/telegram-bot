@@ -1,24 +1,29 @@
 import logging
 import os
 import datetime
+from dotenv import load_dotenv
+import time
 
 import redis
 
 from telegram.ext import Updater, Filters, CommandHandler, MessageHandler, InlineQueryHandler, ConversationHandler, CallbackQueryHandler
 
-from handlers import start, caps, trans, get_time, menu
+from handlers import start, caps, trans, get_time
 from handlers import inline_trans
 from handlers import get_anecdot, chat, unknow_comand, quiz
 
-from handlers import hw, hws
+from yandex_hw import hw, hws, check_homework_statuses
 from subscribe_news import subscribe_news_comand, news_button, get_daily_news
 from questionnaire_hendler import start_anket, user_name, respect, user_age, user_phone, user_bio, user_evaluate, questionnaire_completing, dontknow
 from quiz_game import inline_button_quiz, inline_button_theme
 
 from handlers import inline_button_news
 
-from handlers import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
+load_dotenv()
 
+
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 
 r = redis.StrictRedis()
 if os.getenv('HEROKU'):
@@ -42,7 +47,13 @@ def main():
     users_subscribe_news = r.smembers('users:subscribe:news')
     for user in users_subscribe_news:
         updater.job_queue.run_daily(get_daily_news, name=f'subscribe_news_for{int(user)}', time=datetime.time(hour=10, minute=30, second=0, tzinfo=datetime.timezone(datetime.timedelta(hours=3))), context=int(user))
-    updater.bot.send_message(TELEGRAM_CHAT_ID, text=f'subscribe will be updatet for users: {[int(user) for user in users_subscribe_news]}')
+    updater.bot.send_message(TELEGRAM_CHAT_ID, text=f'subscribe will be updatet for users: {users_subscribe_news}')
+
+    job_hw_check = r.smembers('job_hw_check')
+    if job_hw_check:
+        current_timestamp = int(time.time()) 
+        updater.job_queue.run_repeating(check_homework_statuses, name='job_hw_check', interval=300, first=0, context=current_timestamp)
+        updater.bot.send_message(TELEGRAM_CHAT_ID, text='Пошел узнавать!\nКак только твою домашнюю работу проверят, сообщу результат.')
 
 
     dispatcher.add_handler(InlineQueryHandler(inline_trans))
@@ -54,7 +65,6 @@ def main():
     dispatcher.add_handler(CommandHandler('caps', caps))
     dispatcher.add_handler(CommandHandler('trans', trans))
     dispatcher.add_handler(CommandHandler('time', get_time))
-    dispatcher.add_handler(CommandHandler('menu', menu))
 
     dispatcher.add_handler(MessageHandler(Filters.command, unknow_comand))
     dispatcher.add_handler(MessageHandler(Filters.regex(r'^Хочу анекдот!$'), get_anecdot))

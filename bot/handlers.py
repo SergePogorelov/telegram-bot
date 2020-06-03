@@ -3,7 +3,6 @@ import time
 
 import requests
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
 import redis
 from telegram import InlineQueryResultArticle, InputTextMessageContent, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -12,12 +11,6 @@ from subscribe_news import subscribe_news, unsubscribe_news
 from chat import generate_answer
 from quiz_game import start_quiz
 
-
-load_dotenv()
-
-TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
-PRACTICUM_TOKEN = os.getenv("PRACTICUM_TOKEN")
 
 LAYOUT = dict(zip(map(ord, "qwertyuiop[]asdfghjkl;'zxcvbnm,./`67йцукенгшщзхъфывапролджэячсмитьбю.ё67"
                             'QWERTYUIOP{}ASDFGHJKL:"ZXCVBNM<>?~^&ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ,Ё:?'),
@@ -30,77 +23,6 @@ if os.getenv('HEROKU'):
     r = redis.from_url(os.environ.get("REDIS_URL"))
 
 
-# check YA homeworks status
-def parse_homework_status(homework):
-    homework_name = homework["lesson_name"]
-    if homework["status"] == "rejected":
-        verdict = "К сожалению в работе нашлись ошибки."
-    else:
-        verdict = "Ревьюеру всё понравилось, можно приступать к следующему уроку."
-    return f'У вас проверили работу\n"_{homework_name}_"!\n\n*{verdict}*'
-
-
-def check_homework_statuses(context):
-    current_timestamp = context.job.context
-    headers = {"Authorization": f"OAuth {PRACTICUM_TOKEN}"}
-    params = {"from_date": current_timestamp}
-    homework_statuses = requests.get("https://praktikum.yandex.ru/api/user_api/homework_statuses/", headers=headers, params=params)
-    try:
-        homework_statuses.raise_for_status()
-    except requests.exceptions.HTTPError:
-        context.bot.send_message(chat_id=TELEGRAM_CHAT_ID, text='Request Error')
-        return
-
-    homeworks = homework_statuses.json().get("homeworks")
-    current_date = homework_statuses.json().get("current_date")
-
-    if homeworks:
-        context.bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=parse_homework_status(homeworks[0]), parse_mode='Markdown')
-        if current_date:
-            context.job.context = homework_statuses.json().get("current_date")
-
-
-def hw(update, context):
-    if update.effective_chat.id == int(TELEGRAM_CHAT_ID):
-        current_timestamp = int(time.time()) 
-
-        if context.args:
-            try:
-                arg = int(context.args[0])
-            except (ValueError):
-                update.message.reply_text('Попробуйте "/hw <часы>"')
-                return
-
-            current_timestamp = current_timestamp - arg*60*60
-            if current_timestamp < 0:
-                update.message.reply_text('Простите, мы не можем вернуться в прошлое! :)')
-                return
-
-        if 'job_hw_check' in context.chat_data:
-            old_job_hw_check = context.chat_data['job_hw_check']
-            old_job_hw_check.schedule_removal()
-        
-        new_job_hw_check = context.job_queue.run_repeating(check_homework_statuses, interval=300, first=0, context=current_timestamp)
-        context.chat_data['job_hw_check'] = new_job_hw_check
-        update.message.reply_text('*Пошел узнавать!*\nКак только твою домашнюю работу проверят, сообщу результат.', parse_mode='Markdown')
-
-    else: 
-        context.bot.send_message(chat_id=update.effective_chat.id, text="Эта команда не поддерживается.\nПопробуйте написать /caps")
-
-
-def hws(update, context):
-    if 'job_hw_check' not in context.chat_data:
-        update.message.reply_text('Проверка статуса домашней работы еще не запущена.\nДля запуска напиши:\n"/hw <часы>"')
-        return
-
-    job = context.chat_data['job_hw_check']
-    job.schedule_removal()
-    del context.chat_data['job_hw_check']
-
-    update.message.reply_text('*Остановил проверку статуса*.\nДля повторного запуска напиши:\n"/hw <часы>"', parse_mode='Markdown')
-# END check YA homeworks status
-
-
 def get_anecdot(update, context):
     response = requests.get('http://anekdotme.ru/random')
     page = BeautifulSoup(response.text, 'html.parser')
@@ -111,7 +33,8 @@ def get_anecdot(update, context):
 # /COMANDS
 def start(update, context):
     r.sadd('users', update.effective_chat.id)
-    context.bot.send_message(chat_id=update.effective_chat.id, text="Я могу отправить тебе *случайный анекдот* или *последние новости*.\n\nА можем просто поболтать.\n\nЧто выбираешь?", reply_markup=get_start_keyboard(), parse_mode='Markdown')
+    text = "Я могу отправить тебе *случайный анекдот* или *последние новости*.\n\nА можем просто *поболтать* или *поиграть в КВИЗ*.\n\nЧто выбираешь?\n\n\n_А еще я умею переводить текст в ПРОПИСНЫЕ буквы и автоматически менять раскладку клавиатуры. Для этого воспользуйся командами\n/caps и /trans. \nКстати, команда /trans работает и в илайн-режиме!_"
+    context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=get_start_keyboard(), parse_mode='Markdown')
 
 
 def caps(update, context):
@@ -141,7 +64,7 @@ def get_time(update, context):
 
 
 def unknow_comand(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id, text="Эта команда не поддерживается.\nПопробуйте написать /caps")
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Эта команда не поддерживается.\nПопробуйте написать /start")
 # END COMANDS
 
 def inline_trans(update, context):
@@ -168,10 +91,6 @@ def chat(update, context):
     update.message.reply_text(generate_answer(update.message.text))
 
 
-def menu(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id, text='ouwer menu" select some buttun: ', reply_markup=get_inline_keyboard(menu1=True))
-
-
 def inline_button_news(update, context):
     query = update.callback_query
     query.answer()
@@ -179,9 +98,9 @@ def inline_button_news(update, context):
     if query.data == 'unsubscribe':
         unsubscribe_news(update, context)
 
-
     if query.data == 'subscribe':
         subscribe_news(update, context)
+
 
     if query.data == 'forward':
         query.edit_message_reply_markup(get_inline_keyboard(menu2=True))
