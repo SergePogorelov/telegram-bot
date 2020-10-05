@@ -21,24 +21,21 @@
 - Установите зависимости `pip install -r requirements.txt`
 - Создайте файл `.env` командой `touch .env` и добавьте в него переменные окружения:
 ```
-ДОБАВИТЬ
+NEWSAPI= #токен для получения новостей с https://newsapi.org/
+PRACTICUM_TOKEN= #если вы студент Практикума, можно получать уведомления при проверке домашней работы
+TELEGRAM_CHAT_ID= #ID администратора, для получения системных уведомлений от бота 
+TELEGRAM_TOKEN= #токен телеграм бота
 ```
 - Запустите бота `python3 bot/bot.py`
 
 ## В разработке использованы
 
 - [Python](https://www.python.org/)
-- [Django](https://www.djangoproject.com/)
-- [Pillow](https://pypi.org/project/Pillow/)
-- [Sorl-thumbnail](https://pypi.org/project/sorl-thumbnail/)
-- [Django-debug-toolbar](https://pypi.org/project/django-debug-toolbar/)
-- [Yandex Cloud](https://cloud.yandex.ru/)
-- [PostgreSQL](https://www.postgresql.org/)
-- [Dokcer](https://www.docker.com/)
-- [Gunicorn](https://gunicorn.org/)
-- [Nginx](https://nginx.org/)
-
-## Мониторинг доступности и сбор ошибок
-- [UptimeRobot](https://uptimerobot.com)
-- [Sentry](https://sentry.io/)
+- [Python Telegram Bot](https://github.com/python-telegram-bot/python-telegram-bot)
+- [Requests](https://requests.readthedocs.io/en/master/)
+- [Beautifulsoup4](https://pypi.org/project/beautifulsoup4/)
+- [NewsApi](https://newsapi.org/)
+- [Python-Levenshtein](https://pypi.org/project/python-Levenshtein/)
+- [Redis](https://redis.io/)
+- [Heroku](heroku.com)
 
