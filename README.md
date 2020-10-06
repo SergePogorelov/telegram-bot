@@ -20,7 +20,7 @@
 Перед тем, как начать: если вы не пользуетесь `Python 3`, вам нужно будет установить инструмент `virtualenv` при помощи `pip install virtualenv`. 
 Если вы используете `Python 3`, у вас уже должен быть модуль [venv](https://docs.python.org/3/library/venv.html), установленный в стандартной библиотеке.
 
-- Создайте на своем компютере папку проекта blog `mkdir tbot` и перейдите в нее `cd tbot`
+- Создайте на своем компютере папку проекта `mkdir tbot` и перейдите в нее `cd tbot`
 - Склонируйте этот репозиторий в текущую папку `git clone https://github.com/SergePogorelov/telegram-bot.git .`
 - Создайте виртуальное окружение `python3 -m venv venv`
 - Установите зависимости `pip install -r requirements.txt`
