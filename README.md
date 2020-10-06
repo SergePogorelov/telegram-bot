@@ -23,6 +23,7 @@
 - Создайте на своем компютере папку проекта `mkdir tbot` и перейдите в нее `cd tbot`
 - Склонируйте этот репозиторий в текущую папку `git clone https://github.com/SergePogorelov/telegram-bot.git .`
 - Создайте виртуальное окружение `python3 -m venv venv`
+- Активируйте виртуальное окружение `source venv/bin/activate`
 - Установите зависимости `pip install -r requirements.txt`
 - Создайте файл `.env` командой `touch .env` и добавьте в него переменные окружения:
 ```
