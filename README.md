@@ -8,7 +8,7 @@
 * через команду `/trans ntrcn` переводит текст с английской раскладки на русскую `(ntrcn -> текст)` и обратно;
 * командой `/hw` студенты Яндекс.Практикума могут зарашивать статус проверки своей домашней работы
 
-![Bot-menu](https://i.imgur.com/q2VDdOC.png)
+![Bot-menu](https://i.imgur.com/q2VDdOC.png) ![news](https://i.imgur.com/DucFrec.png)
 
 ## Локальная установка
 Эти инструкции помогут вам создать копию проекта и запустить ее на локальном компьютере для целей разработки и тестирования
@@ -38,6 +38,7 @@ TELEGRAM_TOKEN= #токен телеграм бота
 ### Как разместить бота на Heroku
 - Зарегистрируйтесь на [Heroku](https://heroku.com)
 - Создайте приложение (кнопка `New` → `Create new app`)
+
 ![Create new app](https://i.imgur.com/BQvCoS5.png)
 
 - В разделе `Deploy`, выберите `GitHub` в разделе `Deployment method` и нажмите `Connect to GitHub`
@@ -46,7 +47,7 @@ TELEGRAM_TOKEN= #токен телеграм бота
 
 - Введите названия репозитория в котором находтся код
 - После нажатия кнопки `Deploy Branch` Heroku установит все зависимости и запустит приложение на сервере
-- На вкладке `Resources` подключите [Redis](https://devcenter.heroku.com/articles/heroku-redis) и включите переключатель в разделе`Free dynos`
+- На вкладке `Resources` подключите [Redis](https://devcenter.heroku.com/articles/heroku-redis) и включите переключатель в разделе `Free dynos`
 
 ![Resources](https://i.imgur.com/Byi3UUd.png)
 
@@ -71,4 +72,4 @@ TELEGRAM_TOKEN= #токен телеграм бота
 - [Heroku](https://heroku.com)
 
 ## Лицензия
-Этот проект лицензируется по лицензии `BSD 3-Clause License` - см. [LICENSE.md](LICENSE.md) для получения подробной информации.
+Этот проект лицензируется по лицензии `BSD 3-Clause License` - см. [LICENSE.md](https://github.com/SergePogorelov/telegram-bot/blob/master/LICENSE) для получения подробной информации.
