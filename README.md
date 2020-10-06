@@ -15,10 +15,19 @@
 ## Локальная установка
 Эти инструкции помогут вам создать копию проекта и запустить ее на локальном компьютере для целей разработки и тестирования
 
-### Запуск проекта (на примере Linux)
-
-Перед тем, как начать: если вы не пользуетесь `Python 3`, вам нужно будет установить инструмент `virtualenv` при помощи `pip install virtualenv`. 
+### Перед тем, как начать:
+1. Если вы не пользуетесь `Python 3`, вам нужно будет установить инструмент `virtualenv` при помощи `pip install virtualenv`. 
 Если вы используете `Python 3`, у вас уже должен быть модуль [venv](https://docs.python.org/3/library/venv.html), установленный в стандартной библиотеке.
+
+2. Установите `Redis`. Воспользуйтесь [инструкциями с официального сайта](https://redis.io/download) или командами:
+```
+wget http://download.redis.io/releases/redis-stable.tar.gz
+tar xzf redis-stable.tar.gz
+cd redis-stable && make
+```
+Запустите сервер `Redis` командой `src/redis-server` из папки `redis-stable`
+
+### Запуск проекта (на примере Linux)
 
 - Создайте на своем компютере папку проекта `mkdir tbot` и перейдите в нее `cd tbot`
 - Склонируйте этот репозиторий в текущую папку `git clone https://github.com/SergePogorelov/telegram-bot.git .`
